@@ -4,6 +4,7 @@ load_dotenv()
 
 
 async def msgHandler(bot, message):
+    """ Message Handler """
     try:
         channel = message.channel
         author = message.author
@@ -11,7 +12,8 @@ async def msgHandler(bot, message):
         content = message.content
         prefix = os.getenv("PREFIX")
 
-        print(channel, author, guild, content)
+        # VALIDATOR
+        print(message.type)
 
     except:
         print(f"[ERROR]")
