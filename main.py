@@ -7,17 +7,14 @@ import discord
 from discord.ext.commands import Bot as BotBase
 from discord.ext.commands import CommandNotFound
 from dotenv import load_dotenv
-from function.loader import nocache
-from lib.message import msgHandler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 from lib.db import db
 
 load_dotenv()
 
-PREFIX = os.getenv("PREFFIX")
+PREFIX = os.getenv("PREFIX")
 BOT_NAME = os.getenv("BOT_NAME")
-OWNER_IDS = [521850751543148563]
+OWNER_IDS = os.getenv("OWNER_ID")
 TOKEN = os.getenv("DC_TOKEN")
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
@@ -46,13 +43,13 @@ class Bot(BotBase):
 
         db.autosave(self.scheduler)
         super().__init__(
-            command_prefix=self.prefix,
+            command_prefix='!',
             owner_ids=OWNER_IDS,
             intents=discord.Intents.all())
 
-    def setup(self):
+    async def setup(self):
         for cog in COGS:
-            self.load_extension(f"cogs.{cog}")
+            await self.load_extension(f"cogs.{cog}")
             print(f'{green.yellow("[SYS]")} {cog} Cog Loaded')
 
     def run(self, version):
@@ -60,11 +57,11 @@ class Bot(BotBase):
         print(f'{green.yellow("[SYS]")} Running Bot....')
         print(f'{green.yellow("[SYS]")} Running version {version}')
         print(f'{green.yellow("[SYS]")} Running Setup')
-        self.setup()
 
         super().run(TOKEN, reconnect=True)
 
     async def on_connect(self):
+        await self.setup()
         print(f'{green.yellow("[SYS]")} Bot Connected')
 
     async def on_disconnect(self):
@@ -77,7 +74,7 @@ class Bot(BotBase):
 
     async def on_command_error(self, ctx, exc):
         if isinstance(exc, CommandNotFound):
-            await ctx.send("Invalid command used.")
+            await ctx.send(f"Command tidak tersedia!\nKetik {self.prefix}help untuk mengetahui perintah yang tersedia.")
         elif hasattr(exc, "original"):
             raise exc.original
         else:
@@ -92,6 +89,7 @@ class Bot(BotBase):
             self.ready = True
             # self.scheduler.add_job(self.rules_reminder,CronTrigger(day_of_week=0))
             # self.scheduler.start()
+
             await self.change_presence(activity=discord.Activity(
                 type=discord.ActivityType.playing, name="Silent treatment"))
             print(f'{green.yellow("[SYS]")} {self.bot_name} is now online!')
@@ -106,7 +104,7 @@ class Bot(BotBase):
         if message.author == self.user:
             return
 
-        await msgHandler(self, message)
+        await self.process_commands(message)
 
 
 bot = Bot()
